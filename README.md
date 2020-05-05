@@ -2,6 +2,8 @@
     Audio Visualizer made using p5.js and p5.sound.js
 
 ## Running the Visualizer
+Clone the Repository.
+
 Add the Web Server for Chrome Extension.
  [Web Server Chrome Extension](https://chrome.google.com/webstore/detail/web-server-for-chrome/ofhbbkphhbklhfoeikjpcbhemlocgigb)
 
