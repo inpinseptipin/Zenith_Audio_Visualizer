@@ -10,6 +10,6 @@ Add the Web Server for Chrome Extension.
 Launch the extension and set the location to the Zenith_Audio_Visualizer Root Folder.
 
 ## Dependencies
-To successfully run the Visualizer, First Download the p5.js and p5.sound.js libraries.[P5 Library Full Download](https://github.com/processing/p5.js/releases/download/1.0.0/p5.zip)
+To successfully run the Visualizer, Yoiu will require the p5.js and p5.sound.js libraries.The Libraries are already imported on to the source code. So there is no need to download the libraries.
 
 
