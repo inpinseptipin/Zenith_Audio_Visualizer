@@ -1,14 +1,10 @@
 /* ------------------------------------Global Variables------------------------------*/
 
-let soundFile,reverb,amp;
-var volumeSlider;
-var reverbSlider;
-var progressSlider;
-var panSlider;
-var progressValue=0;
+let soundFile,reverb,amp,filter;
+let volumeSliderText,reverbSliderText,progressSliderText,panSliderText;
+var volumeSlider,reverbSlider,progressSlider,panSlider,filterMenu,filterToggle,initTextToggle,progressValue,visualizerType,x,vol; 
+
 var fileName="../res/tracks/Quarantine.mp3";
-var visualizerType=1;
-var x=0;
 
 /* ------------------------------------Pre Load Functions , Loads the Sound File before GUI------------------------------*/
 function preload()
@@ -21,27 +17,32 @@ function preload()
 	{
 		soundFile=loadSound(fileName);	
 	}
+	initTextToggle=false;
+	visualizerType=1;
+	progressValue=0;
+	filterToggle=1;
+	x=0;
 }
 
-function windowResized()
-{
-	resizeCanvas(windowWidth,windowHeight);
-}
 
-/* ------------------------------------Setup , Setups the GUI------------------------------*/
+/**************************************************************************************************************************/
+
+/* ------------------------------------Setups the GUI , Loads Essential Sound Effects and UI Controls------------------------------*/
 function setup()
 {
 	
-	var height=windowHeight/2;
 	var width=windowWidth;
-	var cnv=createCanvas(windowWidth,height);
-
+	var cnv=createCanvas(800,400);
+	cnv.parent('visualizer');
+	
 /* ------------------------------------Sound Effects------------------------------*/	
 	reverb=new p5.Reverb();
 	amp=new p5.Amplitude(); 
+	filter=new p5.Filter();
 	soundFile.disconnect();
 	reverb.process(soundFile,3,2);
-
+	filter.process(soundFile);
+	
 /* ------------------------------------Buttons------------------------------*/
 
 	play=createButton("Play");
@@ -49,6 +50,7 @@ function setup()
 	stop=createButton("Stop");
 
 /* ------------------------------------Sliders------------------------------*/	
+
 	volumeSlider=createSlider(0,1,0.5,0.01);
 	reverbSlider=createSlider(0,1,0,0.1);
 	progressSlider=createSlider(0,soundFile.duration(),0,10);
@@ -56,24 +58,26 @@ function setup()
 
 /* ------------------------------------DropDowns------------------------------*/
 	visualizer=createSelect();
-	initVisualizer();
+	filterMenu=createSelect();
+	initMenu();
 
-/* ------------------------------------Button Positioning------------------------------*/
-	play.position(10,height);
-	pause.position(60,height);
-	stop.position(120,height);
+/* ------------------------------------ Button Positioning ------------------------------*/
+	play.position(width/32,height+height/4);
+	pause.position(width/16+width/256,height+height/4);
+	stop.position(width/8-width/64,height+height/4);
 
-/* ------------------------------------Slider Variables------------------------------*/
-	volumeSlider.position(180,height);
-	reverbSlider.position(350,height);
-	progressSlider.position(10,height-80);
-	panSlider.position(180,height+80);
-
-/* ------------------------------------DropDown Positioning------------------------------*/	
-	visualizer.position(500,height);
+/* ------------------------------------ Slider Variables ------------------------------*/
+	progressSlider.position(width/8+width/32,height+height/4);
+	volumeSlider.position(width/8+width/32,height+height/2);
+	reverbSlider.position(width/4+width/64,height+height/2);
+	panSlider.position(width/4+width/8,height+height/2);
+	
+/* ------------------------------------ DropDown Positioning ------------------------------*/	
+	visualizer.position(width/4+width/64,height+height/4);
+	filterMenu.position(width/4+width/8,height+height/4);
 
 	
-/* ------------------------------------Event Triggers------------------------------*/	
+/* ------------------------------------ Event Triggers ------------------------------*/	
 	while(!soundFile.isLoaded())
 	{
 		alert("Still Loading");
@@ -83,56 +87,131 @@ function setup()
 	pause.mousePressed(pauseSong);	
 }
 
-/* ------------------------------------Draw , runs Infinitely------------------------------*/
+/* **************************************** DRAW FUNCTION *****************************/
 
 function draw()
 {
-/* ------------------------------------Sets Background------------------------------*/
-
-	background(0,0,0);
+	
+	
 	fill(255,255,255);
-
 /* ------------------------------------Text Elements------------------------------*/
 	
-	text('Volume Control',volumeSlider.x-10,volumeSlider.y-30);
-	text('Reverb Control',reverbSlider.x-10,reverbSlider.y-30);
-	text('Select Visualizer',visualizer.x-10,visualizer.y-30);
-	text('Pan Control',panSlider.x-10,panSlider.y-30);
+	initTextElements();
 	var current=computeCurrentTime();
-	text(current,progressSlider.x,progressSlider.y-30);	
+	text(current,progressSlider.x,progressSlider.y);	
 
 /* ------------------------------------Retrieves Slider Value------------------------------*/
 
 	soundFile.setVolume(volumeSlider.value());
 	reverb.drywet(reverbSlider.value());
 /* ------------------------------------Function Calls------------------------------*/	
+	
 	checkVisualizer();
 	jumpSong();
-	panSong();
+	panSong()
+	filterSound();
 		
-/* ------------------------------------Visualizer Drawing------------------------------*/
+/* ------------------------------------Animation Function Calls------------------------------*/
 
-	var vol=amp.getLevel();
+	Visualizer();
+	progressBar();
+}
 
-	var diameter=map(vol,0,0.2,0,height);
+/* ************************************ANIMATIONS FUNCTION DEFINITIONS************************/
 
-	var meter=map(vol,0,0.2,0,360);
-	
+/* ------------------------------------Initialize Text Elements------------------------------*/
 
+function initTextElements()
+{
+	if(initTextToggle==false)
+	{
+		volumeSliderText=createP("Volume Control");
+		volumeSliderText.position(volumeSlider.x,volumeSlider.y+height/16);
+		volumeSliderText.class("textElements");
+
+		reverbSliderText=createP("Reverb Control");
+		reverbSliderText.position(reverbSlider.x,reverbSlider.y+height/16);
+		reverbSliderText.class("textElements");
+
+		progressSliderText=createP("Progress Jump Control");
+		progressSliderText.position(progressSlider.x,progressSlider.y+height/16);
+		progressSliderText.class("textElements");
+
+		panSliderText=createP("Pan Control");
+		panSliderText.position(panSlider.x,panSlider.y+height/16);
+		panSliderText.class("textElements");
+				
+
+		initTextToggle=true;
+	}
+}
+/* ------------------------------------Initialize Menus------------------------------*/
+function initMenu()
+{
+	visualizer.option("Bullseye");
+	visualizer.option("2");
+	visualizer.option("3");
+
+	filterMenu.option("None");
+	filterMenu.option("Low Pass Filter");
+	filterMenu.option("Band Pass Filter");
+	filterMenu.option("High Pass Filter");
+}
+/* ------------------------------------Progress Animation------------------------------*/
+function progressBar()
+{
+	fill(0,100,0);
+	var progress=map(soundFile.currentTime(),0,soundFile.duration(),0,width);
+	rect(0,(0.95)*height,progress,width/32);	
+}
+
+/* ------------------------------------Visualizer------------------------------*/
+
+function checkVisualizer()
+{
+	if(visualizer.value()=="Bullseye")
+		visualizerType=1;
+	else if(visualizer.value()=="2")
+		visualizerType=2;
+	else if(visualizer.value()=="3")
+		visualizerType=3;
+}
+
+function Visualizer()
+{
+	vol=amp.getLevel();
 	if(visualizerType==1)
 	{
-		fill(random(255),0,random(255));
-		ellipse(width/2+width/4,height/2,diameter,diameter);
-		fill(random(255),random(255),0);
-		ellipse(width/2+width/4,height/2,diameter/2,diameter/2);	
+		bullseye();
 	}
 	else if(visualizerType==2)
 	{
+		background(0,0,0);
 		fill(255,255,255);
 		angle=360/meter;
 		ellipse(width/2+width/4,height/2,200,200);
-	}	
+	}
+
 }
+
+/* ------------------------------------Visualizer 1 : Bullseye------------------------------*/
+
+
+function bullseye()
+{
+	background(0,0,0);
+	var diameter=map(vol,0,0.2,0,height);
+	fill(random(255),0,random(255));
+	ellipse(width/2,height/2,diameter,diameter);
+	fill(random(255),random(255),0);
+	ellipse(width/2,height/2,diameter/2,diameter/2);		
+}
+
+/* ------------------------------------Visualizer 2 : Bullseye------------------------------*/
+
+
+
+/* ------------------------------------Current Time Element------------------------------*/
 	
 function computeCurrentTime()
 {
@@ -142,10 +221,41 @@ function computeCurrentTime()
 	return x;
 }
 
+/* **************************************SOUND EFFECTS*****************************************/
+
 function panSong()
 {
 	soundFile.pan(panSlider.value());
 }	
+
+
+function filterSound()
+{
+	if(filterMenu.value()=="Low Pass Filter")
+	{
+		filter.setType("lowpass");
+		filterToggler(true);
+	}
+	if(filterMenu.value()=="Band Pass Filter")
+	{
+		filter.setType("bandpass");
+		filterToggler(true);		
+	}
+	if(filterMenu.value()=="High Pass Filter")
+	{
+		filter.setType("highpass");
+		filterToggler(true);
+	}
+	if(filterMenu.value()=="None")
+	{
+		filterToggler(false); 
+	}	
+
+}
+
+
+
+/* ------------------------------------Play : Pause : Stop Song------------------------------*/
 function playSong()
 {
 	if(x==0)
@@ -161,6 +271,7 @@ function stopSong()
 	{
 		soundFile.stop();
 		x=0;	
+		progressBar();
 	}
 }
 
@@ -179,26 +290,25 @@ function jumpSong()
 	{
 		progressValue=progressSlider.value();
 		soundFile.jump(progressValue);	
+	}	
+}
+
+function filterToggler(x)
+{
+	if(x==true)
+	{
+		if(filterToggle==0)
+		{
+			filter.toggle();
+			filterToggle=1;
+		}
 	}
-	
+	else
+	{
+		if(filterToggle==1)
+		{
+			filter.toggle();
+			filterToggle=0;	
+		}
+	}
 }
-
-function initVisualizer()
-{
-	visualizer.option("Bullseye");
-	visualizer.option("2");
-	visualizer.option("3");
-}
-
-function checkVisualizer()
-{
-	if(visualizer.value()=="Bullseye")
-		visualizerType=1;
-	else if(visualizer.value()=="2")
-		visualizerType=2;
-	else if(visualizer.value()=="3")
-		visualizerType=3;
-}
-
-
-
